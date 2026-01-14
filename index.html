@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#00A97A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="B.Braun Escala">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/calendar.png">
+    <title>B.Braun - Escala & Marcadores</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+        :root { 
+            --cor-amarela: #FDD835; --cor-verde-escala: #81C784; --hoje: #A800C4; 
+            --verde-claro-header: #00A97A; --texto-escuro: #37474F; --bg-site: #f4f7f6;
+            --bg-card: #ffffff; --bg-num-sem: rgba(0,169,122,0.1);
+        }
+        body.dark-mode {
+            --bg-site: #121212; --bg-card: #1e1e1e; --texto-escuro: #e0e0e0;
+            --cor-amarela: #C4A71A; --bg-num-sem: rgba(255,255,255,0.1);
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-site); margin: 0; padding-bottom: 20px; text-align: center; color: var(--texto-escuro); transition: 0.3s; user-select: none; -webkit-user-select: none; }
+        header { background: rgba(0, 169, 122, 0.95); backdrop-filter: blur(10px); padding: 25px 15px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .logo-txt { font-family: 'Montserrat', sans-serif; font-size: 2em; font-weight: 700; color: white; margin-bottom: 12px; letter-spacing: -2px; text-transform: uppercase; }
+        .controles { display: flex; gap: 8px; justify-content: center; align-items: center; }
+        select { padding: 10px; border-radius: 12px; border: none; background: white; font-weight: bold; font-size: 0.9em; color: #333;}
+        .btn-dark-toggle { background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; border-radius: 12px; cursor: pointer; font-size: 1.2em; }
+        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
+        .mes-card { background: var(--bg-card); margin-bottom: 20px; border-radius: 18px; padding: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+        .resumo-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px; padding: 8px; background: rgba(128,128,128,0.05); border-radius: 12px; }
+        .stat-item { font-size: 0.75em; font-weight: bold; background: var(--bg-card); padding: 4px 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: 35px repeat(7, 1fr); gap: 5px; align-items: center; }
+        .dia-sem { font-size: 0.7em; font-weight: bold; color: #888; }
+        .num-semana { font-size: 0.7em; color: var(--verde-claro-header); font-weight: bold; background: var(--bg-num-sem); border-radius: 4px; padding: 4px 0; }
+        .dia { aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.9em; font-weight: 600; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .AMARELO { background: var(--cor-amarela); color: #4b3a00; }
+        .VERDE { background: var(--cor-verde-escala); color: white; }
+        .meu-trabalho { box-shadow: inset 0 0 0 3px var(--texto-escuro); }
+        .hoje { background: var(--hoje) !important; color: white !important; transform: scale(1.1); z-index: 2; box-shadow: 0 0 15px rgba(168, 0, 196, 0.7); border: 2px solid white; }
+        footer { background: var(--bg-card); margin-top: 30px; padding: 25px 15px; border-top: 1px solid rgba(0,0,0,0.1); }
+        .dev-name { font-weight: 800; color: var(--verde-claro-header); font-size: 1.1em; display: block; margin-bottom: 10px; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--bg-card); padding: 25px; border-radius: 25px; width: 85%; max-width: 340px; color: var(--texto-escuro); }
+        .emoji-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .emoji-btn { font-size: 1.5em; border: 1px solid rgba(128,128,128,0.2); background: rgba(255,255,255,0.05); border-radius: 15px; cursor: pointer; padding: 8px; color: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .emoji-btn span { font-size: 0.4em; font-weight: bold; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-txt">B|BRAUN</div>
+    <div class="controles">
+        <select id="anoSelect" onchange="gerar()">
+            <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+        </select>
+        <select id="turmaSelect" onchange="salvarTurma()">
+            <option value="">Minha Turma</option>
+            <option value="AC">Turma A ou C</option>
+            <option value="BD">Turma B ou D</option>
+        </select>
+        <button class="btn-dark-toggle" onclick="toggleDarkMode()">🌓</button>
+    </div>
+</header>
+
+<div class="container" id="calendario"></div>
+
+<footer>
+    <span class="dev-name">Alexandre Lacerda</span>
+    <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px;">
+        <a href="https://wa.me/5521968253865" target="_blank" style="color: #25D366; text-decoration: none; font-weight: bold;">WhatsApp</a>
+        <a href="mailto:alelacerd@gmail.com" style="color: var(--verde-claro-header); text-decoration: none; font-weight: bold;">E-mail</a>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 10px;">
+        <button onclick="exportarDados()" style="background: #546E7A; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 0.7em; cursor: pointer;">📤 BACKUP</button>
+        <button onclick="document.getElementById('importFile').click()" style="background: #546E7A; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 0.7em; cursor: pointer;">📥 ABRIR</button>
+        <input type="file" id="importFile" style="display: none" onchange="processarArquivo(event)">
+    </div>
+    <p style="font-size: 0.6em; color: #888; margin-top: 20px; letter-spacing: 1px;">v4.8 PRO | SAP & MAINTENANCE</p>
+</footer>
+
+<div id="modal" onclick="fecharModalExterno(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="modalData" style="font-weight: bold; margin-bottom: 5px;"></div>
+        <div class="emoji-picker">
+            <button class="emoji-btn" onclick="salvarNota('🛠️')">🛠️<span>Extra</span></button>
+            <button class="emoji-btn" onclick="salvarNota('💻')">💻<span>SAP</span></button>
+            <button class="emoji-btn" onclick="salvarNota('⚙️')">⚙️<span>Prev</span></button>
+            <button class="emoji-btn" onclick="salvarNota('🔧')">🔧<span>Maint</span></button> 
+            <button class="emoji-btn" onclick="salvarNota('🎂')">🎂<span>Niver</span></button>
+            <button class="emoji-btn" onclick="salvarNota('🏥')">🏥<span>Médico</span></button>
+            <button class="emoji-btn" onclick="salvarNota('🔄')">🔄<span>Troca</span></button>
+            <button class="emoji-btn" onclick="salvarNota('🏖️')">🏖️<span>Férias</span></button>
+            <button class="emoji-btn" onclick="salvarNota('🎓')">🎓<span>Treino</span></button>
+            <button class="emoji-btn" onclick="salvarNota('⚠️')">⚠️<span>Aviso</span></button>
+            <button class="emoji-btn" onclick="salvarNota('')" style="grid-column: span 2; background: rgba(255,0,0,0.05);">❌<span>Limpar</span></button>
+        </div>
+        <button onclick="fecharModal()" style="margin-top: 20px; width: 100%; padding: 12px; border-radius: 10px; border: none; background: #888; color: white; font-weight: bold; cursor: pointer;">FECHAR</button>
+    </div>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
+    }
+
+    const labels = { '🛠️': 'Extra', '💻': 'SAP', '⚙️': 'Prev', '🔧': 'Maint', '🎂': 'Niver', '🏥': 'Médico', '🔄': 'Troca', '🏖️': 'Férias', '🎓': 'Treino', '⚠️': 'Aviso' };
+    const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const diasSemana = ["S", "T", "Q", "Q", "S", "S", "D"];
+    const dataRef = new Date(2026, 0, 10);
+    let dataSelecionada = "";
+
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+
+    function getNumeroSemana(data) {
+        const d = new Date(Date.UTC(data.getFullYear(), data.getMonth(), data.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function gerar() {
+        const ano = parseInt(document.getElementById('anoSelect').value);
+        const turma = document.getElementById('turmaSelect').value;
+        const cont = document.getElementById('calendario');
+        const notas = JSON.parse(localStorage.getItem('notasEscala') || '{}');
+        cont.innerHTML = "";
+        const hoje = new Date();
+        const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+
+        for (let m = 0; m < 12; m++) {
+            let contagem = { '🛠️':0, '💻':0, '⚙️':0, '🔧':0, '🎂':0, '🏥':0, '🔄':0, '🏖️':0, '🎓':0, '⚠️':0 };
+            let diasNoMes = new Date(ano, m + 1, 0).getDate();
+            let diasHtml = "";
+            let prim = new Date(ano, m, 1);
+            let espacos = prim.getDay() === 0 ? 6 : prim.getDay() - 1;
+            
+            diasHtml += `<div class="num-semana">${getNumeroSemana(prim)}</div>`;
+            for (let i = 0; i < espacos; i++) diasHtml += `<div class="vazio"></div>`;
+
+            for (let d = 1; d <= diasNoMes; d++) {
+                let atual = new Date(ano, m, d);
+                let iso = `${ano}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                if (atual.getDay() === 1 && d !== 1) diasHtml += `<div class="num-semana">${getNumeroSemana(atual)}</div>`;
+                
+                let diff = Math.floor((atual - dataRef) / 86400000);
+                let ciclo = ((diff % 4) + 4) % 4;
+                let isAmarelo = (ciclo < 2);
+                let destaque = ((turma === "AC" && isAmarelo) || (turma === "BD" && !isAmarelo)) ? "meu-trabalho" : "";
+                
+                let emoji = notas[iso] || "";
+                if (emoji && contagem[emoji] !== undefined) contagem[emoji]++;
+                diasHtml += `<div class="dia ${isAmarelo ? 'AMARELO':'VERDE'} ${iso === hojeIso ? 'hoje':''} ${destaque}" onclick="abrirModal('${iso}')">${d}${emoji ? `<span class="nota-emoji">${emoji}</span>` : ""}</div>`;
+            }
+
+            let resumoHtml = `<div class="resumo-container">`;
+            let temNota = false;
+            for (let em in contagem) { if (contagem[em] > 0) { resumoHtml += `<span class="stat-item">${em} ${labels[em]}: ${contagem[em]}</span>`; temNota = true; } }
+            resumoHtml += temNota ? `</div>` : `<span style="font-size: 0.7em; color: #888;">Sem marcadores</span></div>`;
+
+            cont.innerHTML += `<div class="mes-card"><h3>${nomesMeses[m]}</h3>${resumoHtml}<div class="grid"><div class="dia-sem">W</div>${diasSemana.map(s => `<div class="dia-sem">${s}</div>`).join('')}${diasHtml}</div></div>`;
+        }
+    }
+
+    function abrirModal(data) { dataSelecionada = data; document.getElementById('modalData').innerText = data.split('-').reverse().join('/'); document.getElementById('modal').style.display = 'flex'; }
+    function fecharModal() { document.getElementById('modal').style.display = 'none'; }
+    function fecharModalExterno(e) { if(e.target.id === 'modal') fecharModal(); }
+    function salvarNota(emoji) {
+        let notas = JSON.parse(localStorage.getItem('notasEscala') || '{}');
+        emoji === "" ? delete notas[dataSelecionada] : notas[dataSelecionada] = emoji;
+        localStorage.setItem('notasEscala', JSON.stringify(notas));
+        fecharModal(); gerar();
+    }
+    function salvarTurma() { localStorage.setItem('turmaSalva', document.getElementById('turmaSelect').value); gerar(); }
+    function exportarDados() {
+        const dados = { notas: JSON.parse(localStorage.getItem('notasEscala') || '{}'), turma: localStorage.getItem('turmaSalva') || "" };
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(dados)], {type: 'application/json'}));
+        a.download = 'backup_escala.json'; a.click();
+    }
+    function processarArquivo(event) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const d = JSON.parse(e.target.result);
+                localStorage.setItem('notasEscala', JSON.stringify(d.notas || d.notes || {}));
+                if(d.turma) localStorage.setItem('turmaSalva', d.turma);
+                location.reload();
+            } catch(err) { alert("Erro ao ler arquivo."); }
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+    window.onload = () => { document.getElementById('turmaSelect').value = localStorage.getItem('turmaSalva') || ""; gerar(); };
+</script>
+</body>
+</html>
